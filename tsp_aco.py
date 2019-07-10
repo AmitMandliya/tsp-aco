@@ -46,8 +46,11 @@ class World:
         listcities = list(self.cities.keys())
         for i in range(self.numcities):
             for j in range(self.numcities):
-                self.distmatrix.iloc[i, j] = self.distcities(listcities[i], listcities[j])
-                self.distmatrix.iloc[j, i] = self.distmatrix.iloc[i, j]
+                if i == j:
+                    self.distmatrix.iloc[i, j] = np.inf
+                else:
+                    self.distmatrix.iloc[i, j] = self.distcities(listcities[i], listcities[j])
+                    self.distmatrix.iloc[j, i] = self.distmatrix.iloc[i, j]
 
     def createCompleteGraph(self):
         weight = 1/self.numcities
@@ -99,41 +102,52 @@ class AntColony:
     def createPherorMatrix(self, world):
         self.pheromone = pd.DataFrame(columns=list(world.cities.keys()),
                                       index=list(world.cities.keys()))
-        for i in range(len(world.cities.keys())):
-            for j in range(len(world.cities.keys())):
+        for i in range(world.numcities):
+            for j in range(world.numcities):
                 self.pheromone.iloc[i, j] = 1/len(world.cities.keys())
                 self.pheromone.iloc[j, i] = self.pheromone.iloc[i, j]
 
     def createColony(self):
         self.colony = {}
         for i in range(self.n_ants):
-            self.colony[i] = []
+            self.colony[i] = {"path": [], "dist": 0}
 
     def initializeColony(self, world):
         if self.n_ants == len(world.cities.keys()):
             for i, city in zip(range(self.n_ants), world.cities.keys()):
-                self.colony[i] = [city]
+                self.colony[i]["path"] = [city]
         else:
             for i in range(self.n_ants):
-                self.colony[i] = list(world.cities.keys())[np.random.randint(world.numcities)]
+                self.colony[i]["path"] = [list(world.cities.keys())[
+                    np.random.randint(world.numcities)]]
 
-    def probaij(self, tauij, etaij,):
+    def calculateProba(self, world):
+        proba = pd.DataFrame(columns=list(world.cities.keys()), index=list(world.cities.keys()))
+        for i in range(world.numcities):
+            for j in range(world.numcities):
+                proba.iloc[i, j] = ((self.pheromone.iloc[i, j])**self.alpha) * \
+                    ((world.distmatrix.iloc[i, j])**-self.beta)
+                proba.iloc[j, i] = proba.iloc[i, j]
         return proba
+
+    def calculateProba_ant(self, world, unvisitedcity):
+        for i in range(len(unvisitedcity)):
+
+        return probaant
 
     def run(self, world):
         self.createColony()
         self.createPherorMatrix(word)
         for i in range(self.n_iterations):
+            proba = self.calculateProba(world)
             self.initializeColony(world)
             unvisitedcity = list(world.cities.keys())
             for ant in range(self.n_ants):
+                # for each ant find a path
                 unvisitedcity = unvisitedcity.remove(self.colony[ant][0])
-                for j in range(world.numcities):
-                    # trova path ant
-                    proba = []
-                for city, w in unvisited:
-                    proba[city]
-                    # tutti proba
+                for j in range(1, world.numcities):
+                    probaant = self.calculateProba_ant(world, unvisitedcity)
+                    # Update: unvisitedcity
 
             self.bpath
             # Update Pherormone

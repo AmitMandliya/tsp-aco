@@ -154,19 +154,23 @@ class AntColony:
     def updatePherorMatrix(self, world):
         depositpher = 0
         for i in range(self.n_ants):
+            for j in range(len(self.colony[ant]["path"])-1):
+                src, dest = self.colony[ant]["path"][j], self.colony[ant]["path"][j+1]
+                self.pheromone.loc[src, dest] += self.Q/self.colony[i]["dist"]
             depositpher += self.Q/self.colony[i]["dist"]
         for i in range(world.numcities):
             for j in range(world.numcities):
                 self.pheromone.iloc[i, j] = (1-self.decay)*self.pheromone.iloc[i, j]*depositpher
                 self.pheromone.iloc[j, i] = self.pheromone.iloc[i, j]
 
-    def calculateDist_ant(self, ant, world):
+    def calculateDist_ant(self, world, ant):
         dist = 0
         for i in range(len(self.colony[ant]["path"])-1):
             dist += world.distmatrix.loc[self.colony[ant]["path"][i], self.colony[ant]["path"][i+1]]
-        self.colony[ant]["dist"] = dist
+        return dist
 
     def run(self, world):
+        path, dist = "path", "dist"
         self.createColony()
         self.createPherorMatrix(world)
         start = time.time()
@@ -186,7 +190,9 @@ class AntColony:
                         self.colony[ant]["path"].append(currentcity)
                     else:
                         self.colony[ant]["path"].append(unvisitedcity[0])
-                self.calculateDist_ant(ant, world)
+                self.colony[ant]["dist"] = self.calculateDist_ant(world, ant)
+                # print("Ant",self.colony[ant])
+
             self.updatePherorMatrix(world)
             bpath = self.findBestPath()
             if i == 0:
@@ -194,7 +200,6 @@ class AntColony:
             else:
                 if bpath["dist"] < self.gbpath["dist"]:
                     self.gbpath = bpath
-            path, dist = "path", "dist"
             print(f"Iteration {i+1}: best path: {bpath[path]}, distance: {bpath[dist]}")
         print("ACO completed")
         print(f"Global best path is {self.gbpath[path]}, with distance: {self.gbpath[dist]}")

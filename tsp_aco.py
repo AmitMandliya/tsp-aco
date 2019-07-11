@@ -130,24 +130,32 @@ class AntColony:
                 proba.iloc[j, i] = proba.iloc[i, j]
         return proba
 
-    def calculateProba_ant(self, world, unvisitedcity):
-        for i in range(len(unvisitedcity)):
-
-        return probaant
+    def calculateProba_ant(self, world, unvisitedcity, currentcity, proba):
+        sigma = 0
+        for h in unvisitedcity:
+            sigma += ((self.pheromone.loc[currentcity, h])**self.alpha) * \
+                ((world.distmatrix.loc[currentcity, h])**-self.beta)
+        probaant = proba.loc[currentcity, :]/sigma
+        return pd.to_numeric(probaant)
 
     def run(self, world):
         self.createColony()
-        self.createPherorMatrix(word)
+        self.createPherorMatrix(world)
         for i in range(self.n_iterations):
             proba = self.calculateProba(world)
             self.initializeColony(world)
-            unvisitedcity = list(world.cities.keys())
             for ant in range(self.n_ants):
                 # for each ant find a path
-                unvisitedcity = unvisitedcity.remove(self.colony[ant][0])
+                unvisitedcity = list(world.cities.keys())
+                currentcity = self.colony[ant]["path"][0]
+                unvisitedcity.remove(currentcity)
                 for j in range(1, world.numcities):
-                    probaant = self.calculateProba_ant(world, unvisitedcity)
-                    # Update: unvisitedcity
-
-            self.bpath
-            # Update Pherormone
+                    if len(unvisitedcity) > 1:
+                        probaant = self.calculateProba_ant(world, unvisitedcity, currentcity, proba)
+                        currentcity = probaant.loc[unvisitedcity].idxmax()
+                        unvisitedcity.remove(currentcity)
+                        self.colony[ant]["path"].append(currentcity)
+                    else:
+                        self.colony[ant]["path"].append(unvisitedcity[0])
+            # Calculate local best path in the j-th iteration
+        self.gbpath  # Calculate global best path

@@ -158,4 +158,5 @@ class AntColony:
                     else:
                         self.colony[ant]["path"].append(unvisitedcity[0])
             # Calculate local best path in the j-th iteration
-        self.gbpath  # Calculate global best path
+            # Update Pheromone
+        self.gbpath  # Global best path

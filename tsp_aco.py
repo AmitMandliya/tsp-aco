@@ -91,13 +91,14 @@ class World:
 
 
 class AntColony:
-    def __init__(self, n_ants, n_iterations, decay=0.6, alpha=1, beta=1):
+    def __init__(self, n_ants, n_iterations, Q, decay=0.6, alpha=1, beta=1):
         self.n_ants = n_ants
         self.n_iterations = n_iterations
         self.decay = decay
         self.alpha = alpha
         self.beta = beta
-        self.bpath = []
+        self.Q = Q
+        self.glbpath = {}
 
     def createPherorMatrix(self, world):
         self.pheromone = pd.DataFrame(columns=list(world.cities.keys()),
@@ -138,9 +139,37 @@ class AntColony:
         probaant = proba.loc[currentcity, :]/sigma
         return pd.to_numeric(probaant)
 
+    def findBestPath(self):
+        bpath = []
+        bestdist = np.inf
+        idxbest = 0
+        for i in range(self.n_ants):
+            if self.colony[i]["dist"] < bestdist:
+                bestdist = self.colony[i]["dist"]
+                bpath = self.colony[i]["path"]
+                idxbest = i
+        bpath = {"path": bpath, "dist": bestdist, "ant": idxbest}
+        return bpath
+
+    def updatePherorMatrix(self, world):
+        depositpher = 0
+        for i in range(self.n_ants):
+            depositpher += self.Q/self.colony[i]["dist"]
+        for i in range(world.numcities):
+            for j in range(world.numcities):
+                self.pheromone.iloc[i, j] = (1-self.decay)*self.pheromone.iloc[i, j]*depositpher
+                self.pheromone.iloc[j, i] = self.pheromone.iloc[i, j]
+
+    def calculateDist_ant(self, ant, world):
+        dist = 0
+        for i in range(len(self.colony[ant]["path"])-1):
+            dist += world.distmatrix.loc[self.colony[ant]["path"][i], self.colony[ant]["path"][i+1]]
+        self.colony[ant]["dist"] = dist
+
     def run(self, world):
         self.createColony()
         self.createPherorMatrix(world)
+        start = time.time()
         for i in range(self.n_iterations):
             proba = self.calculateProba(world)
             self.initializeColony(world)
@@ -157,6 +186,16 @@ class AntColony:
                         self.colony[ant]["path"].append(currentcity)
                     else:
                         self.colony[ant]["path"].append(unvisitedcity[0])
-            # Calculate local best path in the j-th iteration
-            # Update Pheromone
-        self.gbpath  # Global best path
+                self.calculateDist_ant(ant, world)
+            self.updatePherorMatrix(world)
+            bpath = self.findBestPath()
+            if i == 0:
+                self.gbpath = bpath
+            else:
+                if bpath["dist"] < self.gbpath["dist"]:
+                    self.gbpath = bpath
+            path, dist = "path", "dist"
+            print(f"Iteration {i+1}: best path: {bpath[path]}, distance: {bpath[dist]}")
+        print("ACO completed")
+        print(f"Global best path is {self.gbpath[path]}, with distance: {self.gbpath[dist]}")
+        print(f"Total time of execution {time.time()-start} s")
